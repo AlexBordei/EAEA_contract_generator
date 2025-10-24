@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contract de Prestări Servicii - Early Alpha Engineering</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+        .container-main {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: none;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 2rem;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.5rem;
+        }
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            padding: 0.75rem;
+            transition: all 0.3s;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 1rem 3rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            transition: transform 0.3s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .section-title {
+            color: #667eea;
+            font-weight: 700;
+            margin-top: 2rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid #667eea;
+        }
+        .required::after {
+            content: " *";
+            color: #dc3545;
+        }
+        #loadingSpinner {
+            display: none;
+        }
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+        .age-indicator {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-left: 1rem;
+        }
+        .age-adult {
+            background: #d1f4e0;
+            color: #0f5132;
+        }
+        .age-minor {
+            background: #fff3cd;
+            color: #997404;
+        }
+        .auto-filled {
+            background-color: #e7f3ff !important;
+            border-color: #667eea !important;
+        }
+        .section-collapsed {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .form-check {
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+        }
+        .form-check:hover {
+            background-color: #e9ecef;
+        }
+        .form-check-input:checked {
+            background-color: #667eea;
+            border-color: #667eea;
+        }
+        .form-check-label {
+            font-weight: 500;
+            cursor: pointer;
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+    <div class="container container-main">
+        <div class="card">
+            <div class="card-header text-center">
+                <h1 class="mb-2"><i class="bi bi-file-earmark-text"></i> Contract de Prestări Servicii</h1>
+                <p class="mb-0">Early Alpha Engineering S.R.L.</p>
+                <button type="button" class="btn btn-light btn-sm mt-3" onclick="fillDemoData()" title="Completează formularul cu date de test">
+                    <i class="bi bi-lightning-charge"></i> Date Demo (Testing)
+                </button>
+            </div>
+            <div class="card-body p-4">
+                <div id="alertContainer"></div>
+                
+                <form id="contractForm" method="POST" action="/submit-contract">
+                    <!-- Contract Metadata -->
+                    <h3 class="section-title"><i class="bi bi-file-text"></i> Date Contract</h3>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="no" class="form-label required">Număr Contract</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="no" name="no" required placeholder="Se încarcă...">
+                                <button class="btn btn-outline-secondary" type="button" id="refreshContractNo" title="Reîncarcă număr contract">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                            </div>
+                            <small class="form-text text-muted">Numărul se generează automat din Excel</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="date" class="form-label required">Data Contract</label>
+                            <input type="date" class="form-control" id="date" name="date" required>
+                        </div>
+                    </div>
+
+                    <!-- Contact Person Information -->
+                    <h3 class="section-title"><i class="bi bi-person"></i> Date Persoană Contact (Părinte/Tutore/Student)</h3>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="contact_first_name" class="form-label required">Prenume</label>
+                            <input type="text" class="form-control" id="contact_first_name" name="contact_first_name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="contact_last_name" class="form-label required">Nume</label>
+                            <input type="text" class="form-control" id="contact_last_name" name="contact_last_name" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="contact_address" class="form-label required">Adresă Domiciliu (conform CI)</label>
+                        <input type="text" class="form-control" id="contact_address" name="contact_address" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="contact_phone" class="form-label required">Telefon</label>
+                            <input type="tel" class="form-control" id="contact_phone" name="contact_phone" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="contact_email" class="form-label required">Email</label>
+                            <input type="email" class="form-control" id="contact_email" name="contact_email" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="contact_id_series" class="form-label required">Serie CI/BI/Pașaport</label>
+                            <input type="text" class="form-control" id="contact_id_series" name="contact_id_series" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="contact_id_no" class="form-label required">Număr CI/BI/Pașaport</label>
+                            <input type="text" class="form-control" id="contact_id_no" name="contact_id_no" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="contact_personal_no" class="form-label required">CNP</label>
+                            <input type="text" class="form-control" id="contact_personal_no" name="contact_personal_no" pattern="[0-9]{13}" title="CNP trebuie să conțină 13 cifre" required>
+                        </div>
+                    </div>
+
+                    <!-- Emergency Contact -->
+                    <h3 class="section-title"><i class="bi bi-telephone"></i> Contact Urgență</h3>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="sameAsContact" onchange="toggleEmergencyContact()">
+                            <label class="form-check-label" for="sameAsContact">
+                                <i class="bi bi-copy"></i> Utilizează aceleași date ca persoana de contact
+                            </label>
+                        </div>
+                    </div>
+                    <div class="row" id="emergencyContactFields">
+                        <div class="col-md-4 mb-3">
+                            <label for="contact_emergency_first_name" class="form-label required">Prenume</label>
+                            <input type="text" class="form-control" id="contact_emergency_first_name" name="contact_emergency_first_name" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="contact_emergency_last_name" class="form-label required">Nume</label>
+                            <input type="text" class="form-control" id="contact_emergency_last_name" name="contact_emergency_last_name" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="contact_emergency_phone_no" class="form-label required">Telefon</label>
+                            <input type="tel" class="form-control" id="contact_emergency_phone_no" name="contact_emergency_phone_no" required>
+                        </div>
+                    </div>
+
+                    <!-- Student Information -->
+                    <h3 class="section-title">
+                        <i class="bi bi-mortarboard"></i> Date Student
+                        <span id="ageIndicator" class="age-indicator" style="display: none;"></span>
+                    </h3>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="student_first_name" class="form-label required">Prenume Student</label>
+                            <input type="text" class="form-control" id="student_first_name" name="student_first_name" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="student_last_name" class="form-label required">Nume Student</label>
+                            <input type="text" class="form-control" id="student_last_name" name="student_last_name" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="student_birth_date" class="form-label required">Data Nașterii</label>
+                            <input type="date" class="form-control" id="student_birth_date" name="student_birth_date" required>
+                            <small class="form-text text-muted">Vârsta se calculează automat</small>
+                        </div>
+                    </div>
+                    <div id="autoFillNotice" class="alert alert-success" style="display: none;">
+                        <i class="bi bi-magic"></i> <strong>Student > 14 ani:</strong> Datele de contact au fost completate automat cu numele studentului. Modificați dacă este necesar.
+                    </div>
+
+                    <!-- Under 14 Section (Optional) -->
+                    <div id="under14Section">
+                        <h3 class="section-title"><i class="bi bi-info-circle"></i> Date Suplimentare (Dacă Studentul are sub 14 ani)</h3>
+                        <div class="alert alert-info">
+                            <small><i class="bi bi-info-circle-fill"></i> Completați doar dacă studentul are sub 14 ani</small>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="if_14_student_first_name" class="form-label">Prenume Student (sub 14)</label>
+                                <input type="text" class="form-control" id="if_14_student_first_name" name="if_14_student_first_name">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="if_14_student_last_name" class="form-label">Nume Student (sub 14)</label>
+                                <input type="text" class="form-control" id="if_14_student_last_name" name="if_14_student_last_name">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="if_14_date" class="form-label">Data</label>
+                                <input type="date" class="form-control" id="if_14_date" name="if_14_date">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Course Details -->
+                    <h3 class="section-title"><i class="bi bi-book"></i> Detalii Curs</h3>
+                    <div class="mb-3">
+                        <label for="subscriptions_types" class="form-label required">Tipuri de Abonament / Module</label>
+                        <textarea class="form-control" id="subscriptions_types" name="subscriptions_types" rows="3" required></textarea>
+                        <small class="form-text text-muted">Exemplu: Robotică Nivel 1, Programare Python</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="timeslots" class="form-label required">Program Orar</label>
+                        <textarea class="form-control" id="timeslots" name="timeslots" rows="3" required></textarea>
+                        <small class="form-text text-muted">Exemplu: Luni 16:00-18:00, Miercuri 16:00-18:00</small>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                            <i class="bi bi-check-circle"></i> Generează și Trimite Contract
+                        </button>
+                        <div id="loadingSpinner" class="mt-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Se procesează...</span>
+                            </div>
+                            <p class="mt-2">Se generează contractul...</p>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Fetch next contract number from API
+        async function fetchNextContractNumber() {
+            const contractNoInput = document.getElementById('no');
+            const refreshBtn = document.getElementById('refreshContractNo');
+            
+            try {
+                // Show loading state
+                contractNoInput.placeholder = 'Se încarcă...';
+                contractNoInput.disabled = true;
+                if (refreshBtn) refreshBtn.disabled = true;
+                
+                const response = await fetch('/api/next-contract-number');
+                const data = await response.json();
+                
+                if (data.success && data.contract_number) {
+                    contractNoInput.value = data.contract_number;
+                    contractNoInput.placeholder = '';
+                    console.log('✅ Contract number loaded:', data.contract_number);
+                } else {
+                    // Fallback
+                    contractNoInput.value = data.contract_number || '001/2025';
+                    console.warn('⚠️ Using fallback contract number');
+                }
+            } catch (error) {
+                console.error('❌ Error fetching contract number:', error);
+                // Use fallback
+                const year = new Date().getFullYear();
+                contractNoInput.value = `001/${year}`;
+                contractNoInput.placeholder = '';
+            } finally {
+                contractNoInput.disabled = false;
+                if (refreshBtn) refreshBtn.disabled = false;
+            }
+        }
+        
+        // Toggle emergency contact fields (same as contact or different)
+        function toggleEmergencyContact() {
+            const checkbox = document.getElementById('sameAsContact');
+            const emergencyFirstName = document.getElementById('contact_emergency_first_name');
+            const emergencyLastName = document.getElementById('contact_emergency_last_name');
+            const emergencyPhone = document.getElementById('contact_emergency_phone_no');
+            const emergencyFields = document.getElementById('emergencyContactFields');
+            
+            if (checkbox.checked) {
+                // Copy data from contact fields
+                emergencyFirstName.value = document.getElementById('contact_first_name').value;
+                emergencyLastName.value = document.getElementById('contact_last_name').value;
+                emergencyPhone.value = document.getElementById('contact_phone').value;
+                
+                // Disable and style fields
+                emergencyFirstName.disabled = true;
+                emergencyLastName.disabled = true;
+                emergencyPhone.disabled = true;
+                emergencyFields.style.opacity = '0.6';
+                
+                // Add auto-filled class for visual feedback
+                emergencyFirstName.classList.add('auto-filled');
+                emergencyLastName.classList.add('auto-filled');
+                emergencyPhone.classList.add('auto-filled');
+            } else {
+                // Enable fields for manual input
+                emergencyFirstName.disabled = false;
+                emergencyLastName.disabled = false;
+                emergencyPhone.disabled = false;
+                emergencyFields.style.opacity = '1';
+                
+                // Remove auto-filled class
+                emergencyFirstName.classList.remove('auto-filled');
+                emergencyLastName.classList.remove('auto-filled');
+                emergencyPhone.classList.remove('auto-filled');
+                
+                // Don't clear values - let user decide
+            }
+        }
+        
+        // Also update emergency contact when contact fields change (if checkbox is checked)
+        function updateEmergencyIfSame() {
+            const checkbox = document.getElementById('sameAsContact');
+            if (checkbox && checkbox.checked) {
+                toggleEmergencyContact(); // Re-copy the data
+            }
+        }
+        
+        // Add listeners to contact fields
+        document.addEventListener('DOMContentLoaded', function() {
+            const contactFirstName = document.getElementById('contact_first_name');
+            const contactLastName = document.getElementById('contact_last_name');
+            const contactPhone = document.getElementById('contact_phone');
+            
+            if (contactFirstName) contactFirstName.addEventListener('input', updateEmergencyIfSame);
+            if (contactLastName) contactLastName.addEventListener('input', updateEmergencyIfSame);
+            if (contactPhone) contactPhone.addEventListener('input', updateEmergencyIfSame);
+        });
+        
+        // Load contract number and set date on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchNextContractNumber();
+            // Set default date to today
+            document.getElementById('date').valueAsDate = new Date();
+        });
+        
+        // Refresh button click handler
+        document.getElementById('refreshContractNo')?.addEventListener('click', function() {
+            fetchNextContractNumber();
+        });
+        
+        // Fill form with demo data for testing
+        async function fillDemoData() {
+            const demoAdult = confirm('Doriți date pentru student ADULT (14+ ani)?\n\nOK = Adult (16 ani)\nCancel = Minor (12 ani)');
+            
+            // Get today's date for contract
+            const today = new Date();
+            const contractDate = today.toISOString().split('T')[0];
+            
+            // Fetch next contract number (don't use DEMO prefix)
+            await fetchNextContractNumber();
+            document.getElementById('date').value = contractDate;
+            
+            if (demoAdult) {
+                // ADULT STUDENT (16 years old)
+                const birthYear = today.getFullYear() - 16;
+                const studentBirthDate = `${birthYear}-03-15`;
+                
+                // Student info (will auto-fill contact)
+                document.getElementById('student_first_name').value = 'Ion';
+                document.getElementById('student_last_name').value = 'Popescu';
+                document.getElementById('student_birth_date').value = studentBirthDate;
+                
+                // Trigger age calculation (this will auto-fill contact name)
+                handleAgeChange();
+                
+                // Contact details (additional info)
+                document.getElementById('contact_address').value = 'Str. Exemplu nr. 123, Sector 1, București';
+                document.getElementById('contact_phone').value = '+40 712 345 678';
+                document.getElementById('contact_email').value = 'ion.popescu@example.com';
+                document.getElementById('contact_id_series').value = 'RO';
+                document.getElementById('contact_id_no').value = '123456';
+                document.getElementById('contact_personal_no').value = '1990315123456';
+                
+                // Emergency contact (different person)
+                document.getElementById('sameAsContact').checked = false;
+                toggleEmergencyContact(); // Ensure fields are enabled
+                document.getElementById('contact_emergency_first_name').value = 'Maria';
+                document.getElementById('contact_emergency_last_name').value = 'Popescu';
+                document.getElementById('contact_emergency_phone_no').value = '+40 712 345 679';
+                
+                // Under 14 fields will be auto-cleared by age calculation
+            } else {
+                // MINOR STUDENT (12 years old)
+                const birthYear = today.getFullYear() - 12;
+                const studentBirthDate = `${birthYear}-08-20`;
+                
+                // Student info
+                document.getElementById('student_first_name').value = 'Maria';
+                document.getElementById('student_last_name').value = 'Ionescu';
+                document.getElementById('student_birth_date').value = studentBirthDate;
+                
+                // Trigger age calculation (will show under 14 section)
+                handleAgeChange();
+                
+                // Contact person (PARENT/GUARDIAN - different from student)
+                document.getElementById('contact_first_name').value = 'Ana';
+                document.getElementById('contact_last_name').value = 'Ionescu';
+                document.getElementById('contact_address').value = 'Str. Demo nr. 456, Sector 2, București';
+                document.getElementById('contact_phone').value = '+40 722 111 222';
+                document.getElementById('contact_email').value = 'ana.ionescu@example.com';
+                document.getElementById('contact_id_series').value = 'AB';
+                document.getElementById('contact_id_no').value = '654321';
+                document.getElementById('contact_personal_no').value = '2850820123456';
+                
+                // Emergency contact (different person)
+                document.getElementById('sameAsContact').checked = false;
+                toggleEmergencyContact(); // Ensure fields are enabled
+                document.getElementById('contact_emergency_first_name').value = 'Mihai';
+                document.getElementById('contact_emergency_last_name').value = 'Ionescu';
+                document.getElementById('contact_emergency_phone_no').value = '+40 722 333 444';
+                
+                // Under 14 fields auto-filled by age calculation
+            }
+            
+            // Course details (same for both)
+            document.getElementById('subscriptions_types').value = 'Robotică Avansată\nProgramare Python\nElectronică și IoT';
+            document.getElementById('timeslots').value = 'Marți: 17:00-18:30\nJoi: 17:00-18:30\nSâmbătă: 10:00-12:00';
+            
+            // Show success message
+            const alertContainer = document.getElementById('alertContainer');
+            const contractNo = document.getElementById('no').value;
+            alertContainer.innerHTML = `
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    <i class="bi bi-lightning-charge-fill"></i>
+                    <strong>Date Demo Încărcate!</strong> Formularul a fost completat cu date de test.
+                    Număr contract: <strong>${contractNo}</strong> (din Excel).
+                    ${demoAdult ? 'Student adult (16 ani) - nume contact auto-completat.' : 'Student minor (12 ani) - secțiunea sub 14 ani vizibilă.'}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // Calculate age from birth date
+        function calculateAge(birthDate) {
+            const today = new Date();
+            const birth = new Date(birthDate);
+            let age = today.getFullYear() - birth.getFullYear();
+            const monthDiff = today.getMonth() - birth.getMonth();
+            
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+                age--;
+            }
+            
+            return age;
+        }
+
+        // Auto-fill contact fields if student is 14+
+        function handleAgeChange() {
+            const birthDate = document.getElementById('student_birth_date').value;
+            const studentFirstName = document.getElementById('student_first_name').value;
+            const studentLastName = document.getElementById('student_last_name').value;
+            
+            if (!birthDate) return;
+            
+            const age = calculateAge(birthDate);
+            const ageIndicator = document.getElementById('ageIndicator');
+            const autoFillNotice = document.getElementById('autoFillNotice');
+            const under14Section = document.getElementById('under14Section');
+            
+            // Show age indicator
+            ageIndicator.style.display = 'inline-block';
+            ageIndicator.textContent = `Vârstă: ${age} ani`;
+            
+            if (age >= 14) {
+                // Adult student - auto-fill contact fields
+                ageIndicator.className = 'age-indicator age-adult';
+                
+                // Only auto-fill if student name is provided
+                if (studentFirstName && studentLastName) {
+                    const contactFirstName = document.getElementById('contact_first_name');
+                    const contactLastName = document.getElementById('contact_last_name');
+                    
+                    // Auto-fill only if contact fields are empty
+                    if (!contactFirstName.value || contactFirstName.classList.contains('auto-filled')) {
+                        contactFirstName.value = studentFirstName;
+                        contactFirstName.classList.add('auto-filled');
+                    }
+                    if (!contactLastName.value || contactLastName.classList.contains('auto-filled')) {
+                        contactLastName.value = studentLastName;
+                        contactLastName.classList.add('auto-filled');
+                    }
+                    
+                    autoFillNotice.style.display = 'block';
+                }
+                
+                // Hide under 14 section and clear values
+                under14Section.classList.add('section-collapsed');
+                document.getElementById('if_14_student_first_name').value = '';
+                document.getElementById('if_14_student_last_name').value = '';
+                document.getElementById('if_14_date').value = '';
+            } else {
+                // Minor student - show under 14 section
+                ageIndicator.className = 'age-indicator age-minor';
+                autoFillNotice.style.display = 'none';
+                under14Section.classList.remove('section-collapsed');
+                
+                // Remove auto-filled class and don't clear contact fields
+                // (parent/guardian info should be different)
+                document.getElementById('contact_first_name').classList.remove('auto-filled');
+                document.getElementById('contact_last_name').classList.remove('auto-filled');
+                
+                // Auto-fill under 14 section with student name
+                if (studentFirstName && studentLastName) {
+                    document.getElementById('if_14_student_first_name').value = studentFirstName;
+                    document.getElementById('if_14_student_last_name').value = studentLastName;
+                    document.getElementById('if_14_date').value = document.getElementById('date').value;
+                }
+            }
+        }
+
+        // Remove auto-filled styling when user manually edits
+        function removeAutoFilledClass(fieldId) {
+            document.getElementById(fieldId).addEventListener('input', function() {
+                this.classList.remove('auto-filled');
+            });
+        }
+        
+        removeAutoFilledClass('contact_first_name');
+        removeAutoFilledClass('contact_last_name');
+
+        // Listen for changes
+        document.getElementById('student_birth_date').addEventListener('change', handleAgeChange);
+        document.getElementById('student_first_name').addEventListener('input', handleAgeChange);
+        document.getElementById('student_last_name').addEventListener('input', handleAgeChange);
+
+        // Form submission
+        document.getElementById('contractForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const alertContainer = document.getElementById('alertContainer');
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            loadingSpinner.style.display = 'block';
+            alertContainer.innerHTML = '';
+            
+            // Temporarily enable emergency fields if disabled (so they get submitted)
+            const emergencyFirstName = document.getElementById('contact_emergency_first_name');
+            const emergencyLastName = document.getElementById('contact_emergency_last_name');
+            const emergencyPhone = document.getElementById('contact_emergency_phone_no');
+            const wasDisabled = emergencyFirstName.disabled;
+            
+            if (wasDisabled) {
+                emergencyFirstName.disabled = false;
+                emergencyLastName.disabled = false;
+                emergencyPhone.disabled = false;
+            }
+            
+            try {
+                const formData = new FormData(this);
+                
+                // Re-disable if they were disabled
+                if (wasDisabled) {
+                    emergencyFirstName.disabled = true;
+                    emergencyLastName.disabled = true;
+                    emergencyPhone.disabled = true;
+                }
+                const response = await fetch('/submit-contract', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alertContainer.innerHTML = `
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle-fill"></i>
+                            <strong>Succes!</strong> ${result.message}
+                            <br><small>
+                                PDF generat: ${result.pdf_generated ? '✓' : '✗'} | 
+                                Salvat în Google Sheets: ${result.sheets_saved ? '✓' : '✗'} | 
+                                Email trimis: ${result.email_sent ? '✓' : '✗'}
+                            </small>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    `;
+                    // Reset form
+                    this.reset();
+                    // Reset emergency contact checkbox and fields
+                    document.getElementById('sameAsContact').checked = false;
+                    toggleEmergencyContact();
+                    // Reload contract number and date for next submission
+                    fetchNextContractNumber();
+                    document.getElementById('date').valueAsDate = new Date();
+                } else {
+                    alertContainer.innerHTML = `
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <strong>Eroare!</strong> ${result.message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                alertContainer.innerHTML = `
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <strong>Eroare!</strong> A apărut o eroare la trimiterea formularului.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+            } finally {
+                // Hide loading state
+                submitBtn.disabled = false;
+                loadingSpinner.style.display = 'none';
+                
+                // Scroll to top to see the alert
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+    </script>
+</body>
+</html>
+

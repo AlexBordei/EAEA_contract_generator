@@ -1,0 +1,23 @@
+[
+  "contact_address",
+  "contact_email",
+  "contact_emergency_last_name",
+  "contact_emergency_phone_no",
+  "contact_emergency_ﬁrst_name",
+  "contact_id_no",
+  "contact_id_series",
+  "contact_last_name",
+  "contact_personal_no",
+  "contact_phone",
+  "contact_ﬁrst_name",
+  "date",
+  "if_14_date",
+  "if_14_student_last_name",
+  "if_14_student_ﬁrst_name",
+  "no",
+  "student_birth_date",
+  "student_last_name",
+  "student_ﬁrst_name",
+  "subscriptions_types",
+  "timeslots"
+]
