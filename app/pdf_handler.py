@@ -11,10 +11,37 @@ class PDFHandler:
     def __init__(self, template_path: str):
         self.template_path = template_path
     
+    def _get_font_at_position(self, page, rect) -> tuple:
+        """Extract font name and size from text at given position.
+        
+        Returns:
+            (fontname, fontsize) tuple
+        """
+        # Get text with font information
+        blocks = page.get_text('dict')['blocks']
+        
+        # Find text spans that overlap with our rect
+        for block in blocks:
+            if 'lines' not in block:
+                continue
+            
+            for line in block['lines']:
+                for span in line['spans']:
+                    span_rect = fitz.Rect(span['bbox'])
+                    
+                    # Check if this span overlaps with our placeholder
+                    if span_rect.intersects(rect):
+                        # Return the original font info
+                        return (span['font'], span['size'])
+        
+        # Fallback to Palatino if not found
+        return ('PalatinoLinotype-Roman', 10.0)
+    
     def generate_pdf(self, data: Dict[str, str], output_path: str) -> str:
         """Generate filled PDF using redaction and text insertion.
         
         Uses PyMuPDF's redaction API which is more reliable than overlay.
+        Preserves original fonts from template.
         """
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
         
@@ -49,12 +76,17 @@ class PDFHandler:
                     instances = page.search_for(placeholder)
                     
                     for inst in instances:
+                        # Extract original font from this position
+                        original_font, original_size = self._get_font_at_position(page, inst)
+                        
                         # Add redaction annotation
                         redaction_list.append({
                             'rect': inst,
                             'placeholder': placeholder,
                             'value': str(value),
-                            'key': key
+                            'key': key,
+                            'font': original_font,
+                            'fontsize': original_size
                         })
             
             # Apply all redactions on this page
@@ -70,30 +102,57 @@ class PDFHandler:
             # Apply all redactions at once
             page.apply_redactions()
             
-            # Now insert new text at same positions using insert_text (simpler, more reliable)
+            # Now insert new text at same positions using original fonts
             for item in redaction_list:
                 rect = item['rect']
                 value = item['value']
                 placeholder = item['placeholder']
+                original_font = item['font']
+                original_fontsize = item['fontsize']
                 
-                # Calculate good font size based on rect height
-                rect_height = rect.height
-                fontsize = min(rect_height * 0.7, 10)  # Max 10pt, slightly smaller
+                # Use original fontsize, but slightly smaller if needed
+                fontsize = min(original_fontsize * 0.9, original_fontsize)
                 
-                # Use insert_text at the baseline position (bottom-left of rect)
                 # Position text at left edge and slightly above bottom
-                point = fitz.Point(rect.x0, rect.y1 - 2)  # 2 points above bottom
+                point = fitz.Point(rect.x0, rect.y1 - 2)
                 
-                # Insert text directly (no text box constraints)
-                page.insert_text(
-                    point,
-                    value,
-                    fontsize=fontsize,
-                    fontname="helv",
-                    color=(0, 0, 0)
-                )
+                # Map template fonts to available PyMuPDF fonts
+                # PalatinoLinotype → tiro (Times-Roman, serif similar)
+                # OpenSans → helv (Helvetica, sans-serif)
+                font_mapping = {
+                    'PalatinoLinotype-Roman': 'tiro',
+                    'PalatinoLinotype-Bold': 'tirob',  # Times-Bold
+                    'OpenSans-Regular': 'helv',
+                    'OpenSans-Bold': 'helvb',
+                }
+                
+                # Get mapped font or use fallback
+                fontname = font_mapping.get(original_font, 'tiro')
+                
+                # Insert text with matched font
+                try:
+                    page.insert_text(
+                        point,
+                        value,
+                        fontsize=fontsize,
+                        fontname=fontname,
+                        color=(0, 0, 0)
+                    )
+                    font_used = fontname
+                except Exception as e:
+                    # Ultimate fallback to Times
+                    page.insert_text(
+                        point,
+                        value,
+                        fontsize=fontsize,
+                        fontname='tiro',
+                        color=(0, 0, 0)
+                    )
+                    font_used = 'tiro'
                 
                 replacements_made += 1
+                
+                # Print replacement confirmation
                 if len(value) > 30:
                     print(f"✅ Page {page_num + 1}: '{placeholder}' → '{value[:30]}...'")
                 else:
